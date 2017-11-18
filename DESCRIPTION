@@ -1,0 +1,21 @@
+Package: ClassEx
+Title: Extrapolation Methods for Multiclass Classification Accuracy
+Version: 0.0.0.9000
+Authors@R: person("Charles", "Zheng", email = "charles.y.zheng@gmail.com", role = c("aut", "cre"))
+Description: Code accompanying the manuscript "Extrapolating Expected Accuracies for Recognition Tasks" by Charles Zheng, Rakesh Achanta and Yuval Benjamini.
+Depends:
+    R (>= 3.1.2)
+Imports:
+    pracma,
+    parallel,
+    MASS,
+    glmnet,
+    Rcpp
+License: GPL (>= 2)
+LazyData: true
+Suggests:
+    testthat,
+    knitr
+VignetteBuilder: knitr
+RoxygenNote: 5.0.1
+LinkingTo: Rcpp

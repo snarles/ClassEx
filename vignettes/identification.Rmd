@@ -1,0 +1,212 @@
+---
+title: "Identification"
+author: "Charles Zheng"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+The lineId package provides tools for fitting linear multivariate models
+and using them for identification.
+
+## Introduction
+
+Suppose we observe vector-valued data $y_i$ for $i = 1,..., m$, and each data point belongs to a class $1,...,K$.  Let $z_i$ denote the class label of $y_i$.
+Often, the $z_i$ are unobserved, and the goal is to guess the class label $z_i$
+for each observation.  In scientific applications, the $z_i$ may in fact have been observed or even controlled, but the goal is to evaluate the power of a probabilistic model in inferring the labels $z_i$ given $y_i$.
+
+In *classification* one has prior information (e.g. traning data)
+on the distribution of responses from each class label, which is used to
+assign labels.  For instance, one has an estimate of the mean $\mu_i$ and covariance
+$\Sigma_i$ of the response in each class.
+
+In *identification*, one may not have direct information on the classes $1,...,K$,
+but has *class covariates* $x_1,...,x_k$ for each class.
+These covariates describe some features of each class.
+For instance, if classes $1,..,K$ are different pictures, then $x_i$ is a vector of image features.
+In this case, one usually has prior information on the *relationship* between
+the class covariates $x$ and the characteristics of the response distribution.
+For example, one has training data for responses $y$ for different classes.
+Based on this training data, one could have a model for how the mean $\mu$ and covariance $\Sigma$ of a particular class depend on $x$, i.e.
+$$\mu = f(x)$$
+$$\Sigma = g(x)$$.
+
+## Linear Identification
+
+The lineId package focuses on identification problems which assume a linear model,
+of the form
+$$\mu = xB$$
+$$\Sigma = \text{const.}$$
+where $x$ is the class covariates as a row vector, $B$ is some coefficient matrix,
+and $\mu$ is the response mean as a row vector.  Meanwhile, the response covariance $\Sigma$ is assumed to not depend on the class.
+
+To fit the above model, we rely on *training data* consisting of pairs of
+covariates and responses, $(x, y)$.
+Let $X_{tr}$ and $Y_{tr}$ denote the matrices obtained by stacking the
+covariates and responses as row vectors, so that according to the linear model
+$$
+E[Y_{tr}] = X_{tr}B
+$$
+Hence, multivariate regression can be used to estimate $B$.
+
+Meanwhile, the resduals of the regression can be used to estimate $\Sigma$.
+
+Estimating $B$ and $\Sigma$ produces a *forward model* which can be used to
+predict a new response $y$ drawn from a class with covariates $x$.
+
+However, we are given response $y$ and tasked with identifying the label $z$.
+Let us make some additional assumptions in our forward model, so that $y$ is normally distributed conditional on $z$,
+$$
+y|z \sim N(x_z B, \Sigma)
+$$
+Given this distributional forward model, and also the distribution of $z$ (which we will just take to be uniform), we can use Bayes' rule to produce
+the posterior probability of $z$ conditional on $y$.
+$$
+Pr[z = i] = \frac{N(y; x_i B, \Sigma)}{\sum_{j = 1}^K N(y; x_j B, \Sigma)}
+$$
+If we seek to minimize the misclassification rate, the optimal decision is to choose label $i$ which maximizes the posterior probability.  We can take logs and get rid of the denominator in the above expression, so that we end up choosing $i$ which maximizes
+$$
+\log N(y; x_i B, \Sigma)
+$$
+What we have just described here amounts to a *backwards model*, a rule
+for guessing the label $i$ given the previously estimated parameters $B$ and $\Sigma$.
+
+However, this is not the only reasonable backwards model.  We call the rule we have given here the "MLE rule".
+In our paper, we describe a more complicated backwards model which treats $B$ as a random effect with a prior distribution and accounts for the uncertainty in the estimation of $B$.
+
+## The package
+
+The lineId package includes functions for the tasks described above and more, namely:
+
+ * Feature selection: If the response $y$ is extremely high-dimensional, it makes sense to limit our modelling attention to a subset of the components.  For example, $y$ may denote the collection of voxels in an fMRI image--but only a small fraction of the voxels may display any sensitivity to the stimulus.  See functions `no_filter` and `filter_eigenprism`.
+ * Forward modelling: Estimating $B$ given training data.  A variety of approaches can be used here, including ridge-regression and elastic net.  See functions `fit_ridge_kernel` and `fit_elnet_CV`.
+ * Covariance modelling: Estimating $\Sigma$.  Again, a variety of approaches exists int he literature, including off-diagonal shrinkage, eigenvalue shrinkage, and sparse graphical models.  Often, the training data responses $y$ are taken from a time series, and it is desirable to model the correlations between training set responses due to autocorrelation.  Hence we distinguish between the covariance $\Sigma_e$ between the components of a response and the covariance $\Sigma_t$ within the time series of an individual component, and provide methods for both.  See functions `residual_offdiag`, `use_eigenprism`.
+ * Bacwards modelling: Predicting the labels given previously estimated $\Sigma$.  See functions `post_likes`, `pre_mle` and `pre_Bayes`.
+ * Scoring: Measuring error according to misclassification or other metrics.  See functions `sum_score` and `topk_score`.
+ * Synthetic data generation: See functions `gen_params` and `gen_data`.
+ * Pipeline: One can automate the process of fitting forward models, covariance estimation, backwards modelling, and scoring using "pipeline" functions.  See `identification_pipeline1`.
+ 
+## An example
+
+Let us generate data with `pX=10`-dimensional features and a `pY=20`-dimensional response.
+We use identity covariance for features/response and no autocorrelation (hence
+the parameters `W_X=Inf`, `W_e=Inf`, and `rho_t=0`).
+The noise has standard deviation `s_e=0.1`.
+We generate a training set of size `n=30`, a test set of size `n_te=20`, and use `L=10` test classes.
+The coefficient matrix $B$ is randomly generated with each component normal with mean zero and standard derivation `s_b=0.1`.  The parameter `df_b=Inf` means that each column of $B$ has the same prior variance.
+
+
+```{r}
+library(lineId)
+params <- gen_params(n=30, pY=20, pX=10, W_X=Inf, s_e=0.1, s_b=0.1, df_b=Inf, W_e=Inf, rho_t=0, L=10, n_te=20)
+```
+
+Let us inspect the objects created by `gen_params`
+```{r}
+names(params)
+dim(params$X)
+dim(params$X_te)
+dim(params$B)
+dim(params$Sigma_b)
+dim(params$Sigma_e)
+dim(params$Sigma_t)
+```
+
+`X`, `X_te` and `B` are the training data covariates, test class covariates, and coefficient matrix, respectively.
+`Sigma_b` is the *prior* covariance of the columns of $B$, which we will not use for now.
+`Sigma_e` is the covariance of the noise, and `Sigma_t` is the time series covariance, which have both been specified as identity.
+
+Notice we have not yet generated the training or test responses.  This is because a separate function takes care of the task: `gen_data`.  This way, the same covariates can be used to generate multiple datasets, which allows investigation of sampling variability.
+
+```{r}
+dat <- gen_data(X=params$X, X_te=params$X_te, B=params$B, 
+                Sigma_e=params$Sigma_e, Sigma_t=params$Sigma_t, n_te=20)
+```
+
+But rather than type out the arguments one by one, we can use `do.call`.
+
+```{r}
+dat <- do.call(gen_data, params)
+```
+
+Now we can look at the contents of `dat`.
+
+```{r}
+names(dat)
+dat$i_chosen
+```
+
+Here, `Y` is the training response, `y_star` are the test set responses, and `i_chosen` are the true labels (corresponding to rows of `X_te`).
+
+Next, we fit a forward model.  We will use ridge regression on each column of $Y$ separately, using cross-validation to choose the regularization parameter.
+
+```{r}
+B <- fit_elnet_CV(X=dat$X, Y=dat$Y, alpha=0)
+```
+
+We can compare the fitted $B$ to the true $B$.
+```{r}
+plot(params$B, B)
+abline(a = 0, b = 1)
+```
+Note the shrinkage effect: many of the components of the estimated $B$ are zero, and most of the nonzero components are still below the diagonal (indicating they are shrunk compared to the truth.)
+
+Next, we can use the residuals of the fitted model to estimate $\Sigma$.
+We will use the sample covariance of the residuals, but shrink the off-diagonals by a multiplicative factor of `shrink=0.5`.  Again, we compare the estimate with the truth.
+```{r}
+Sigma <- residual_offdiag(X=dat$X, Y=dat$Y, B=B, shrink=0.5)
+plot(params$Sigma_e, Sigma)
+abline(a = 0, b = 1)
+```
+
+Finally, we can use MLE rule to do identification.
+This requires two steps.
+First, use `pre_mle` to estimate the distribution of each class in `X_te`
+```{r}
+dists <- pre_mle(X_te=dat$X_te, B=B, Sigma_e=Sigma)
+```
+
+We get a list of length `L=10`, where the $i$-th element of the list gives the mean and covariance of the $i$-th class.
+
+```{r}
+length(dists)
+names(dists[[1]])
+```
+
+Now, we use the function `post_likes`
+```{r}
+pl <- post_likes(X_te=dat$X_te, y_star=dat$y_star, pre_moments=dists)
+dim(pl)
+```
+We get a matrix of dimension `n_te=20` by `L=10`, where the $i$-th row and $j$-th column
+is the log posterior probability of the $i$-th test response having the label $j$.
+
+We get the predicted labels, simply choose the max in each row.
+Now compare the true labels with the predictions.
+```{r}
+predicted_labels <- apply(pl, 1, function(v) order(-v)[1])
+rbind(true_labels = dat$i_chosen, predicted_labels)
+```
+
+Alternatively, use `topk_score` to count the total number of correct classifications.
+Parameter `k=1` means we only consider the result correct if the correct class has the largest probability.  But in general we can relax the criterion to only requiring the correct class to have the `k`-th largest probability.
+```{r}
+topk_score(plikes=pl, i_chosen=dat$i_chosen, k = 1)
+```
+
+Finally, all of the above (beside data generation) could have been automated as follows.
+```{r}
+results <- identification_pipeline1(
+  X=dat$X, Y=dat$Y, X_te=dat$X_te, y_star=dat$y_star, i_chosen=dat$i_chosen,
+  forward_method=fit_elnet_CV, forward_params=list(alpha = 0),
+  Sigma_e_method=residual_offdiag, Sigma_e_params=list(shrink = 0.5),
+  backward_method=pre_mle,
+  scoring_method=topk_score, scoring_params=list(k = 1))
+names(results)
+results$score
+```
+
+(Results may vary slightly due to the randomness in `fit_elnet_CV`.)
