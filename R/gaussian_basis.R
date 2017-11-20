@@ -57,11 +57,11 @@ bdwid_all_preds <- function(accs_sub, basis_sets, nonnegative = TRUE) {
     set1 <- basis_sets[[j]]
     Xmat <- set1$Xmat
     if (nonnegative) {
-      ls_fit <- nnls(Xmat, accs_sub)
+      bt <- nnls(Xmat, accs_sub)$x
     } else {
-      ls_fit <- solve(t(Xmat) %*% Xmat, t(Xmat) %*% accs_sub)
+      bt <- solve(t(Xmat) %*% Xmat, t(Xmat) %*% accs_sub)
     }
-    ans[j, ] <- set1$Xtarg %*% ls_fit$x
+    ans[j, ] <- set1$Xtarg %*% bt
   }
   ans
 }

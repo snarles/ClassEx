@@ -20,9 +20,18 @@ ClassExReg <- function(pmat, i_chosen, basis_sets, Ktrain=2:ncol(pmat), nboot = 
       counts_subsub <- fastRank(pmat[i_chosen %in% subinds, subinds], i_chosen[i_chosen %in% subinds])
       boot_accs[ii, ] <- count_acc(counts_subsub, kref[1:lsub2])
     }
+    all_sub_preds <- t(apply(boot_accs, 1, bdwid_all_preds, basis_sets = sub_basis_sets))
+    cv_curve <- sqrt(colMeans((all_sub_preds - accs_sub[length(kref)])^2))
+    sel_ind <- which.min(cv_curve)
   } else {
     sel_ind <- 1
   }
-
-  
+  Xmat <- basis_sets[[sel_ind]]$Xmat
+  Xpred <- basis_sets[[sel_ind]]$Xtarg
+  if (nonnegative) {
+    bt <- nnls(Xmat, accs_sub)$x
+  } else {
+    bt <- solve(t(Xmat) %*% Xmat, t(Xmat) %*% accs_sub)
+  }
+  return(Xpred %*% bt)
 }
