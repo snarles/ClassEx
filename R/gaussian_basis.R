@@ -46,6 +46,7 @@ get_gaussian_basis_mat <- function(max.mu, kernel_sigma, Ktrain, Ktarg, n.sample
 
 #' Get predictions for a list of basis sets
 #' 
+#' @import nnls
 #' @param accs_sub subsampled accuracies ATA_k
 #' @param basis_sets a list of bases obtained e.g. using lapply and get_gaussian_basis_mat
 #' @param nonnegative constrain coefficients of basis to be nonnegative? default TRUE.

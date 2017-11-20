@@ -3,7 +3,7 @@
 #' @param counts The ranks of the correct label for each tets instance.
 #' @param K Total number of labels in test set.
 #' @param subKs The number of classes k for which we want to calculate ATA_k.
-count_acc <- function(ranks, K=length(counts), subKs = 1:length(counts)) {
+count_acc <- function(ranks, K=length(ranks), subKs = 1:length(counts)) {
   p_i <- 1 - ranks/K
   rowMeans(dhyper(zeros(length(subKs), length(p_i)), 
                   repmat(ranks, length(subKs), 1) - 1, 

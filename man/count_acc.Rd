@@ -4,7 +4,7 @@
 \alias{count_acc}
 \title{Subroutine to compute average test accuracies ATA_k given correct-label ranks.}
 \usage{
-count_acc(ranks, K = length(counts), subKs = 1:length(counts))
+count_acc(ranks, K = length(ranks), subKs = 1:length(counts))
 }
 \arguments{
 \item{K}{Total number of labels in test set.}

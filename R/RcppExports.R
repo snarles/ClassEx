@@ -4,6 +4,7 @@
 #' @title Computing the rank of the correct label given classification scores.
 #' @param pmat Matrix of margins m_y(x) for test instances, rows are observations and columns are labels.
 #' @param Zs True labels.
+#' @export
 fastRank <- function(pmat, Zs) {
     .Call('_ClassEx_fastRank', PACKAGE = 'ClassEx', pmat, Zs)
 }
@@ -12,6 +13,7 @@ fastRank <- function(pmat, Zs) {
 #' @param Xm Matrix of centroids, rows are centroids and columns are dimensions.
 #' @param Ym Data matrix, rows are observations and columns are dimensions.
 #' @param Zs Assignments of observations to centroids.
+#' @export
 fastRank1nn <- function(Xm, Ym, Zs) {
     .Call('_ClassEx_fastRank1nn', PACKAGE = 'ClassEx', Xm, Ym, Zs)
 }

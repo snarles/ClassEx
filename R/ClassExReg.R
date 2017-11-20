@@ -1,5 +1,6 @@
 #' Classification Extrapolation with Regression (and bootstrap model selection)
 #' 
+#' @import nnls
 #' @param pmat Matrix of margins m_y(x) for test instances, rows are observations and columns are labels.
 #' @param i_chosen True labels.
 #' @param Ktrain the number of classes k for which we have computed average test accuracies ATA_k.
@@ -7,6 +8,7 @@
 #' If there is only one element in the list, then model selection is not applied.
 #' @param nboot Number of bootstrap samples to use in model selection.
 #' @param nonnegative constrain coefficients of basis to be nonnegative? default TRUE.
+#' @export
 ClassExReg <- function(pmat, i_chosen, basis_sets, Ktrain=2:ncol(pmat), nboot = 25, nonnegative = TRUE) {
   accs_sub <- sub_accuracies(pmat, i_chosen, Ktrain)
   if (length(basis_sets) > 0) {
@@ -16,12 +18,12 @@ ClassExReg <- function(pmat, i_chosen, basis_sets, Ktrain=2:ncol(pmat), nboot = 
     })
     boot_accs <- matrix(NA, nboot, lsub2)
     for (ii in 1:nboot) {
-      subinds <- sample(ksub, ksub2, replace = FALSE)
-      counts_subsub <- fastRank(pmat[i_chosen %in% subinds, subinds], i_chosen[i_chosen %in% subinds])
-      boot_accs[ii, ] <- count_acc(counts_subsub, kref[1:lsub2])
+      subinds <- sort(sample(ksub, lsub2, replace = FALSE))
+      i_chosen2 <- match(i_chosen[i_chosen %in% subinds], subinds)
+      boot_accs[ii, ] <- sub_accuracies(pmat[i_chosen %in% subinds, subinds], i_chosen2, Ktrain[1:lsub2])
     }
     all_sub_preds <- t(apply(boot_accs, 1, bdwid_all_preds, basis_sets = sub_basis_sets))
-    cv_curve <- sqrt(colMeans((all_sub_preds - accs_sub[length(kref)])^2))
+    cv_curve <- sqrt(colMeans((all_sub_preds - accs_sub[length(Ktrain)])^2))
     sel_ind <- which.min(cv_curve)
   } else {
     sel_ind <- 1
