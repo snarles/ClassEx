@@ -6,10 +6,6 @@ Description: Code accompanying the manuscript "Extrapolating Expected Accuracies
 Depends:
     R (>= 3.1.2)
 Imports:
-    pracma,
-    parallel,
-    MASS,
-    glmnet,
     nnls,
     Rcpp
 License: GPL (>= 2)

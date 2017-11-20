@@ -24,7 +24,6 @@ i_chosen <- rep(1:100, each = 50)
 
 kde_bdwids <- list("bcv", "ucv")
 (max.mu <- (qnorm(1- 1/(ksub^2))))
-lsub2 <- ksub2
 
 (bdwids <- seq(0.1, 1, 0.1))
 basis_sets <- lapply(bdwids, function(bd) get_gaussian_basis_mat(max.mu, bd, 1:ksub, K))

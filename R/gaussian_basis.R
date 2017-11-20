@@ -38,7 +38,7 @@ gaussian_basis <- function(mu, sigma2, ks, n.sample = 1e4) {
 get_gaussian_basis_mat <- function(max.mu, kernel_sigma, Ktrain, Ktarg, n.sample = 1e4) {
   (n_half <- ceiling(max.mu/kernel_sigma))
   (seq_half <- seq(0, max.mu, length.out = n_half))
-  (kernel_mus <- c(rev(seq_half[-1]), seq_half, Inf))
+  (kernel_mus <- c(-rev(seq_half[-1]), seq_half, Inf))
   Xmat <- sapply(kernel_mus, function(mu) gaussian_basis(mu, kernel_sigma^2, Ktrain, n.sample))
   Xtarg <- sapply(kernel_mus, function(mu) gaussian_basis(mu, kernel_sigma^2, Ktarg, n.sample))
   list(Xmat = Xmat, Xtarg = Xtarg)
