@@ -10,6 +10,7 @@ Imports:
     parallel,
     MASS,
     glmnet,
+    nnls,
     Rcpp
 License: GPL (>= 2)
 LazyData: true

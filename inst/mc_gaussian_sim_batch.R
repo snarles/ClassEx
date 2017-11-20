@@ -50,7 +50,7 @@ basis_vecs <- list()
 
 for (gb in fixed.gb) {
   nm <- paste0("r.gauss", gb)
-  basis_vecs[[nm]] <- get_basis_mat(max.mu, kernel_sigma = gb)
+  basis_vecs[[nm]] <- get_gaussian_basis_mat(max.mu, kernel_sigma = gb)
 }
 
 (bdwids <- seq(0.1, 1, 0.1))
@@ -72,15 +72,14 @@ subfun <- function (repno) {
   ys <- mus + sqrt(sigma2) * randn(K, p)
   mu_hats <- mus + sqrt(sigma2_tr) * randn(K, p)
   pmat_sub <- -pdist2(ys[1:ksub, ], mu_hats[1:ksub, ])
-  rSqs <- rowSums((ys - mu_hats)^2)
-  counts <- countDistEx(mu_hats, ys, rSqs)
+  counts <- countDistEx(mu_hats, ys, 1:K)
   accs <- count_acc(counts, Ktarg)    
   counts_sub <- countDistEx(mu_hats[1:ksub,], ys[1:ksub,], rSqs[1:ksub])
   accs_sub <- count_acc(counts_sub, kref)
   boot_accs <- matrix(NA, nboot, lsub2)
   for (ii in 1:nboot) {
     subinds <- sample(ksub, ksub2, replace = FALSE)
-    counts_subsub <- countDistEx(mu_hats[subinds,], ys[subinds,], rSqs[subinds])
+    counts_subsub <- fastRank1nn(mu_hats[subinds,], ys[subinds,], rSqs[subinds])
     boot_accs[ii, ] <- count_acc(counts_subsub, kref[1:lsub2])
   }
   preds <- matrix(NA, length(column_names), length(Ktarg))
